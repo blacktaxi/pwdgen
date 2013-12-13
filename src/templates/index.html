@@ -141,8 +141,16 @@
             }).then(
               function (data, t, r) {
                 $("#generatebutton").button('reset');
-                $("#password").val(data.passwords[Math.floor(Math.random() * data.passwords.length)]);
-                window.hideflash();
+                if (data.error === undefined) {
+                    if (data.passwords === undefined) {
+                        window.showflash("Something went wrong.", true);
+                    } else {
+                        $("#password").val(data.passwords[Math.floor(Math.random() * data.passwords.length)]);
+                        window.hideflash();
+                    }
+                } else {
+                    window.showflash("Error: " + data.error, true);
+                }
               },
               function (r, t, error) {
                 $("#generatebutton").button('reset');

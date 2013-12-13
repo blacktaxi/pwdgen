@@ -61,7 +61,7 @@ def generate():
         result = [re.sub(TPL_VAR_RE, eval_var, template) for _ in xrange(count)]
         return jsonify({'passwords': result, 'template': template})
     except Exception as e:
-        return jsonify({'error': repr(e), 'template': template})
+        return jsonify({'error': repr(e)})
 
 @app.route('/')
 @app.route('/<password_template>')
