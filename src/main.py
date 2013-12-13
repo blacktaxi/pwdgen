@@ -25,6 +25,7 @@ MAX_PASSWORD_COUNT = 42
 TPL_VAR_RE = re.compile(r'\<(?P<var>.*?)\>')
 
 from words import DICTIONARY
+ALL_WORDS = [w for _, d in DICTIONARY.items() for w in d]
 
 def gen_number(m):
     low = 10 ** (len(m.group(0)) - 1)
@@ -41,6 +42,7 @@ def eval_var(match):
         r'adj': lambda _: gen_word(DICTIONARY['adjectives']),
         r'verb': lambda _: gen_word(DICTIONARY['verbs']),
         r'adv': lambda _: gen_word(DICTIONARY['adverbs']),
+        r'word': lambda _: gen_word(ALL_WORDS),
         r'(\d+)': gen_number
     }
 
@@ -48,7 +50,7 @@ def eval_var(match):
         m = re.match(k, expr)
         if m is not None:
             return str(v(m))
-    raise 'Unexpected expression "%s"' % expr
+    raise Exception('Unexpected expression "%s"' % expr)
 
 @app.route('/api/1/generate', methods=['GET'])
 def generate():
