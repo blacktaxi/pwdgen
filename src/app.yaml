@@ -17,7 +17,7 @@ handlers:
 
 # Route requests to static files (and subdirectories) in the listed
 # directories.
-- url: /static
+- url: /assets
   static_dir: static
 
 # Make robots.txt accessible at the root URL.

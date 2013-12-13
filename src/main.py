@@ -13,9 +13,15 @@ random.seed()
 # sys.path includes 'server/lib' due to appengine_config.py
 from flask import Flask, jsonify, request
 from flask import render_template
+from flask_sslify import SSLify
 app = Flask(__name__.split('.')[0])
 
+# don't use HTTPS locally -- it does not work
+if not os.environ.get('SERVER_SOFTWARE', 'w/e').startswith('Development'):
+    sslify = SSLify(app)
+
 DEFAULT_TEMPLATE = '<adj><noun><00>'
+MAX_PASSWORD_COUNT = 42
 TPL_VAR_RE = re.compile(r'\<(?P<var>.*?)\>')
 
 from words import DICTIONARY
@@ -25,13 +31,16 @@ def gen_number(m):
     high = low * 10
     return int(low + random.random() * (high - low))
 
+def gen_word(words):
+    return random.choice(words).replace('_', '').replace('-', '')
+
 def eval_var(match):
     expr = match.groupdict()['var'].strip()
     gen_map = {
-        r'noun': lambda _: random.choice(DICTIONARY['nouns']),
-        r'adj': lambda _: random.choice(DICTIONARY['adjectives']),
-        r'verb': lambda _: random.choice(DICTIONARY['verbs']),
-        r'adv': lambda _: random.choice(DICTIONARY['adverbs']),
+        r'noun': lambda _: gen_word(DICTIONARY['nouns']),
+        r'adj': lambda _: gen_word(DICTIONARY['adjectives']),
+        r'verb': lambda _: gen_word(DICTIONARY['verbs']),
+        r'adv': lambda _: gen_word(DICTIONARY['adverbs']),
         r'(\d+)': gen_number
     }
 
@@ -43,16 +52,20 @@ def eval_var(match):
 
 @app.route('/api/1/generate', methods=['GET'])
 def generate():
-    template = request.args.get('t', request.args.get('template', DEFAULT_TEMPLATE))
-
+    # import time
+    # time.sleep(1)
     try:
-        result = re.sub(TPL_VAR_RE, eval_var, template)
-        return jsonify({'password': result, 'template': template})
+        template = request.args.get('t', request.args.get('template', DEFAULT_TEMPLATE))
+        count = min(int(request.args.get('count', '5')), MAX_PASSWORD_COUNT)
+
+        result = [re.sub(TPL_VAR_RE, eval_var, template) for _ in xrange(count)]
+        return jsonify({'passwords': result, 'template': template})
     except Exception as e:
         return jsonify({'error': repr(e), 'template': template})
 
 @app.route('/')
-@app.route('/<name>')
-def hello(name=None):
-  """ Return hello template at application root URL."""
-  return render_template('hello.html', name=name)
+@app.route('/<password_template>')
+def index(password_template=DEFAULT_TEMPLATE):
+    password_template = request.args.get('t', password_template)
+
+    return render_template('index.html', **locals())
