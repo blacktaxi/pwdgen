@@ -54,8 +54,6 @@ def eval_var(match):
 
 @app.route('/api/1/generate', methods=['GET'])
 def generate():
-    # import time
-    # time.sleep(1)
     try:
         template = request.args.get('t', request.args.get('template', DEFAULT_TEMPLATE))
         count = min(int(request.args.get('count', '5')), MAX_PASSWORD_COUNT)
