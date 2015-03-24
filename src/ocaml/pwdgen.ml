@@ -95,19 +95,11 @@ module Par = struct
   let a_char x = sat ((==) x)
 
   let rec a_string = function
-    | [] -> fail "empty string"
-    | x :: xs ->
-      a_char x >> a_string xs >> return (x :: xs)
+    | [] -> raise (Failure "invalid argument")
+    | x :: xs -> a_char x >> a_string xs >> return (x :: xs)
 
-  let rec many p =
-    choose (many1 p) (return [])
-
-  and many1 p =
-    p
-    >>= fun v ->
-    many p
-    >>= fun vs ->
-    return (v :: vs)
+  let rec many p = choose (many1 p) (return [])
+  and many1 p = p >>= fun v -> many p >>= fun vs -> return (v :: vs)
 
 end
 
@@ -146,7 +138,7 @@ struct
   let p_meta = a_char '{' *> choose p_word_meta p_number_meta <* a_char '}'
 
   let p_static =
-    many1 (Par.sat ((<>) '{'))
+    many1 (sat ((<>) '{'))
     |> fmap (fun x -> Static (implode x))
 
   let parse template_string =
@@ -154,7 +146,6 @@ struct
     match parse the_parser (explode template_string) with
     | Ok (tpl, _) -> Ok tpl
     | Error _ as e -> e
-
 end
 
 let _ = Random.self_init ()
