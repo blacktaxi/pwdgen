@@ -58,22 +58,8 @@ module Par = struct
   type ('a, 'c) par = Pa of ('c list -> ('a * 'c list, string) result)
 
   let parse (Pa p) inp = p inp
-
   let return x = Pa (fun inp -> Ok (x, inp))
-
   let fail e = Pa (fun _ -> Error e)
-
-  let choose q w =
-    Pa (fun inp ->
-      match parse q inp with
-      | Ok _ as ok -> ok
-      | Error _ -> parse w inp
-    )
-
-  let item = Pa (function
-    | [] -> Error "expected item"
-    | hd :: tl -> Ok (hd, tl)
-  )
 
   let bind p f = Pa (fun inp ->
     match parse p inp with
@@ -83,12 +69,28 @@ module Par = struct
   let (>>=) = bind
 
   let combine q w = q >>= fun _ -> w
+  let fmap f p = p >>= fun x -> return (f x)
+  let ap pf p = pf >>= fun f -> p >>= fun a -> return (f a)
+
   let (>>) = combine
+  let (<$>) = fmap
+  let (<*>) = ap
+  let (<* ) a b = a >>= fun x -> b >>= fun _ -> return x
+  let ( *>) a b = a >>= fun _ -> b >>= fun x -> return x
+
+  let choose q w = Pa (fun inp ->
+    match parse q inp with
+    | Ok _ as ok -> ok
+    | Error _ -> parse w inp
+  )
+
+  let item = Pa (function
+    | [] -> Error "expected item"
+    | hd :: tl -> Ok (hd, tl)
+  )
 
   let sat pred =
-    item
-    >>= fun x ->
-    if pred x then (return x) else (fail "no sat")
+    item >>= fun x -> if pred x then (return x) else (fail "no sat")
 
   let a_char x = sat ((==) x)
 
@@ -106,8 +108,6 @@ module Par = struct
     many p
     >>= fun vs ->
     return (v :: vs)
-
-  let map f p = p >>= fun x -> return (f x)
 
 end
 
@@ -143,18 +143,11 @@ struct
     >>= fun numdef ->
     return (Number (List.length numdef))
 
-  let p_meta =
-    a_char '{'
-    >>= fun _ ->
-    choose p_word_meta p_number_meta
-    >>= fun r ->
-    a_char '}'
-    >>= fun _ ->
-    return r
+  let p_meta = a_char '{' *> choose p_word_meta p_number_meta <* a_char '}'
 
   let p_static =
     many1 (Par.sat ((<>) '{'))
-    |> map (fun x -> Static (implode x))
+    |> fmap (fun x -> Static (implode x))
 
   let parse template_string =
     let the_parser = many1 (Par.choose p_meta p_static) in
