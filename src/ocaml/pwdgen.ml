@@ -7,16 +7,18 @@ type generation_config =
     random : int * int -> int;
   }
 
-type pos = | Noun | Adj | Verb | Adv
+type pos = Noun | Adj | Verb | Adv
 
 type token =
   | Static of string
   | Number of int
   | Word of pos
 
+type template = token list
+
 exception Invalid_template of string
 
-let generate_random item ~(gen_cfg : generation_config) =
+let generate_random item ~(gen_cfg: generation_config) =
   let rng = gen_cfg.random in
   let choose_from arr = Array.get arr (rng (0, Array.length arr)) in
 
@@ -50,6 +52,7 @@ let generate_from_template template gen_cfg =
 
 type ('a, 'b) result = Ok of 'a | Error of 'b
 
+(* primitive parser combinators *)
 module Par = struct
   (* can't use `parser` here, ugh *)
   type ('a, 'c) par = Pa of ('c list -> ('a * 'c list, string) result)
@@ -108,59 +111,58 @@ module Par = struct
 
 end
 
-let parse_template template_string =
-  let rec explode = function
+(* generation template parser *)
+module Parse_template : sig
+  val parse : string -> (template, string) result
+end =
+struct
+  let rec explode : string -> char list = function
     | "" -> []
     | s  ->
       (String.get s 0) ::
       explode (String.sub s 1 ((String.length s) - 1))
-  in
 
-  let rec implode = function
+  let rec implode : char list -> string = function
     | [] -> ""
     | x :: xs -> (Char.escaped x) ^ (implode xs)
-  in
 
-  let (>>=) = Par.(>>=)
-  in
+  open Par
 
-  let the_parser =
-    let meta =
-      let word_meta =
-        Par.many1 (Par.sat ((<>) '}'))
-        >>= fun meta_name ->
-        match implode meta_name with
-        | "noun" -> Par.return (Word Noun)
-        | "adj" -> Par.return (Word Adj)
-        | "verb" -> Par.return (Word Verb)
-        | "adv" -> Par.return (Word Adv)
-        | other -> Par.fail ("unrecognized meta: " ^ other)
-      in
+  let p_word_meta =
+    many1 (sat ((<>) '}'))
+    >>= fun meta_name ->
+    match implode meta_name with
+    | "noun" -> return (Word Noun)
+    | "adj" -> return (Word Adj)
+    | "verb" -> return (Word Verb)
+    | "adv" -> return (Word Adv)
+    | other -> fail ("unrecognized meta: " ^ other)
 
-      let number_meta =
-        Par.many1 (Par.sat ((==) '0'))
-        >>= fun numdef ->
-        Par.return (Number (List.length numdef)) 
-      in
+  let p_number_meta =
+    many1 (sat ((==) '0'))
+    >>= fun numdef ->
+    return (Number (List.length numdef))
 
-      Par.a_char '{'
-      >>= fun _ ->
-      Par.choose word_meta number_meta
-      >>= fun r ->
-      Par.a_char '}'
-      >>= fun _ ->
-      Par.return r
-    in
+  let p_meta =
+    a_char '{'
+    >>= fun _ ->
+    choose p_word_meta p_number_meta
+    >>= fun r ->
+    a_char '}'
+    >>= fun _ ->
+    return r
 
-    let static =
-      Par.many1 (Par.sat ((<>) '{'))
-      |> Par.map (fun x -> Static (implode x))
+  let p_static =
+    many1 (Par.sat ((<>) '{'))
+    |> map (fun x -> Static (implode x))
 
-    in
-    Par.many1 (Par.choose meta static)
+  let parse template_string =
+    let the_parser = many1 (Par.choose p_meta p_static) in
+    match parse the_parser (explode template_string) with
+    | Ok (tpl, _) -> Ok tpl
+    | Error _ as e -> e
 
-  in
-  Par.parse the_parser (explode template_string)
+end
 
 let _ = Random.self_init ()
 
@@ -178,12 +180,10 @@ let _ =
     }
   in
   let js_generate tpl_string =
-    let tpl = parse_template (Js.to_string tpl_string) in
+    let tpl = Parse_template.parse (Js.to_string tpl_string) in
     match tpl with
-    | Ok (tpl, _) -> Js.string (generate_from_template tpl cfg)
-    | Error e -> Js.string e
+    | Ok tpl -> Js.string (generate_from_template tpl cfg)
+    | Error e -> Js.string ("Could not parse template: " ^ e)
   in
 
   m##generate <- Js.wrap_callback js_generate;
-  m##parseTemplate <- Js.wrap_callback (fun s -> parse_template (Js.to_string s));
-
