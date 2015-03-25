@@ -89,6 +89,11 @@ module Par = struct
     | hd :: tl -> Ok (hd, tl)
   )
 
+  let eoi = Pa (function
+    | [] -> Ok ((), [])
+    | _ -> Error "expected end of input"
+  )
+
   let sat pred =
     item >>= fun x -> if pred x then (return x) else (fail "no sat")
 
@@ -142,7 +147,10 @@ struct
     |> fmap (fun x -> Static (implode x))
 
   let parse template_string =
-    let the_parser = many1 (Par.choose p_meta p_static) in
+    let the_parser =
+      many1 (Par.choose p_meta p_static) <* eoi
+
+    in
     match parse the_parser (explode template_string) with
     | Ok (tpl, _) -> Ok tpl
     | Error _ as e -> e
