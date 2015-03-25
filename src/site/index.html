@@ -7,7 +7,7 @@
     <meta name="description" content="Online password generation tool">
     <meta name="author" content="Sergey Yavnyi">
 
-    <link href="/assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
     <style type="text/css">
       body {
         padding-top: 20px;
@@ -44,9 +44,9 @@
   <body>
     <div class="container-narrow">
       <div class="jumbotron">
-        <h2>Grow a beard.</h2>
+        <h2>Exercise your memory.</h2>
         <hr>
-        <p class="lead">For those times when you realize that the last time the password was changed was approximately never.</p>
+        <p class="lead">Tell me your password and I will tell you who you are.</p>
 
         <div class="input-group">
           <div class="input-group-btn">
@@ -68,7 +68,7 @@
         <form id="templatesettings" class="collapse" role="form" action="#">
             <div class="form-group">
                 <label for="passwordtemplate">Password template</label>
-                <input class="form-control" type="text" name="t" id="passwordtemplate" placeholder="Password template goes here. For example, <adj><noun><00>" value="{{ password_template }}"></input>
+                <input class="form-control" type="text" name="t" id="passwordtemplate" placeholder="Password template goes here. For example, {adj}{noun}{00}" value="{adj}{noun}{00}"></input>
             </div>
         </form>
         
@@ -81,45 +81,74 @@
       <hr>
 
       <div class="footer">
-        <p>&copy; <a href="http://reversemicrowave.me/">Sergey Yavnyi</a> 2013</p>
+        <p>&copy; <a href="http://reversemicrowave.me/">Sergey Yavnyi</a> 2015</p>
       </div>
 
     </div>
 
     <a href="https://github.com/blacktaxi/pwdgen"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
 
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-    <script src="/assets/js/bootstrap.js"></script>
-    <script src="/assets/js/bootstrap-flash.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script src="assets/js/bootstrap.js"></script>
+    <script src="assets/js/bootstrap-flash.js"></script>
+    <script src="assets/js/pwdgen.ml.js"></script>
 
     <script>
       !function ($) {
         $(function () {
+          var dict = null;
+
+          var generate = function () {
+            var tpl = $("#passwordtemplate").val();
+            if (dict === null) {
+              return {"error": "Error loading dictionary."};
+            } else {
+              return window.pwdGen.generate(tpl)(dict);
+            }
+          }
+
+          var generatePrime = function () {
+            var res = null;
+            try {
+              res = generate();
+            } catch (err) {
+              res = {"error": err.message};
+            }
+
+            if (res.error === undefined) {
+              if (res.password === undefined) {
+                window.showflash("Something went wrong.", true);
+              } else {
+                $("#password").val(res.password);
+                window.hideflash();
+              }
+            } else {
+              window.showflash("Error: " + res.error, true);
+            }
+          }
+
           $("#generatebutton").click(function () {
             $("#generatebutton").button('loading');
-            $.ajax({
-              type: "get",
-              url: "/api/1/generate",
-              data: "t=" + $("#passwordtemplate").val() + "&count=5"
-            }).then(
-              function (data, t, r) {
-                $("#generatebutton").button('reset');
-                if (data.error === undefined) {
-                    if (data.passwords === undefined) {
-                        window.showflash("Something went wrong.", true);
-                    } else {
-                        $("#password").val(data.passwords[Math.floor(Math.random() * data.passwords.length)]);
-                        window.hideflash();
-                    }
-                } else {
-                    window.showflash("Error: " + data.error, true);
+
+            if (dict === null) {
+              $.ajax({
+                type: "get",
+                url: "/assets/dict.json"
+              }).then(
+                function (data, t, r) {
+                  $("#generatebutton").button('reset');
+                  dict = data;
+                  generatePrime();
+                },
+                function (r, t, error) {
+                  $("#generatebutton").button('reset');
+                  window.showflash("Error: " + error, true);
                 }
-              },
-              function (r, t, error) {
-                $("#generatebutton").button('reset');
-                window.showflash("Error: " + error, true);
-              }
-            );
+              );
+            } else {
+              $("#generatebutton").button('reset');
+              generatePrime();
+            }
           });
 
           $("#password").keydown(function (e) {
