@@ -65,12 +65,12 @@
           </div>
         </div>
 
-        <form id="templatesettings" class="collapse" role="form" action="#">
+        <div id="templatesettings" class="collapse">
             <div class="form-group">
                 <label for="passwordtemplate">Password template</label>
                 <input class="form-control" type="text" name="t" id="passwordtemplate" placeholder="Password template goes here. For example, {adj}{noun}{00}" value="{adj}{noun}{00}"></input>
             </div>
-        </form>
+        </div>
         
       </div>
 
@@ -158,8 +158,6 @@
           });
 
           $("#password").focus();
-          $("#generatebutton").click();
-
         });
       }(window.jQuery);
     </script>
