@@ -94,17 +94,24 @@ module Par = struct
     | _ -> Error "expected end of input"
   )
 
+  let rec many p = choose (many1 p) (return [])
+  and many1 p = p >>= fun v -> many p >>= fun vs -> return (v :: vs)
+
+  let label msg p = Pa (fun inp ->
+    match parse p inp with
+    | Error _ -> Error ("expected: " ^ msg)
+    | ok -> ok
+  )
+  let (<?>) p msg = label msg p
+
   let sat pred =
     item >>= fun x -> if pred x then (return x) else (fail "no sat")
 
-  let a_char x = sat ((==) x)
+  let a_char x = sat ((==) x) <?> (Char.escaped x)
 
   let rec a_string = function
     | [] -> raise (Failure "invalid argument")
     | x :: xs -> a_char x >> a_string xs >> return (x :: xs)
-
-  let rec many p = choose (many1 p) (return [])
-  and many1 p = p >>= fun v -> many p >>= fun vs -> return (v :: vs)
 
 end
 
@@ -175,7 +182,6 @@ let _ =
           random = fun (l, h) -> l + (Random.int (h - l));
         }
       in
-      (* Js.Unsafe.obj [| ("password", Js.string (generate_from_template tpl cfg)); |] *)
       let r = Js.Unsafe.obj [| |] in
       r##password <- Js.string (generate_from_template tpl cfg);
       r
