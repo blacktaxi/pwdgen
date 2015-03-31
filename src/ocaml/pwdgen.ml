@@ -1,3 +1,21 @@
+module String = struct
+  include String
+
+  let rec explode : string -> char list = function
+    | "" -> []
+    | s  ->
+      (String.get s 0) ::
+      explode (String.sub s 1 ((String.length s) - 1))
+
+  let rec implode : char list -> string = function
+    | [] -> ""
+    | x :: xs -> (Char.escaped x) ^ (implode xs)
+
+  let filter p s =
+    (* ugh *)
+    explode s |> List.filter p |> implode
+end
+
 type generation_config =
   {
     nouns : string array;
@@ -45,6 +63,7 @@ let generate_random item ~(gen_cfg: generation_config) =
         | Adv -> gen_cfg.adverbs
     in
       choose_from dict
+      |> String.filter (function | '-' | '_' -> false | _ -> true)
 
 let generate_from_template template gen_cfg =
   let words = List.map (generate_random ~gen_cfg:gen_cfg) template in
@@ -120,22 +139,13 @@ module Parse_template : sig
   val parse : string -> (template, string) result
 end =
 struct
-  let rec explode : string -> char list = function
-    | "" -> []
-    | s  ->
-      (String.get s 0) ::
-      explode (String.sub s 1 ((String.length s) - 1))
-
-  let rec implode : char list -> string = function
-    | [] -> ""
-    | x :: xs -> (Char.escaped x) ^ (implode xs)
 
   open Par
 
   let p_word_meta =
     many1 (sat ((<>) '}'))
     >>= fun meta_name ->
-    match implode meta_name with
+    match String.implode meta_name with
     | "noun" -> return (Word Noun)
     | "adj" -> return (Word Adj)
     | "verb" -> return (Word Verb)
@@ -151,14 +161,14 @@ struct
 
   let p_static =
     many1 (sat ((<>) '{'))
-    |> fmap (fun x -> Static (implode x))
+    |> fmap (fun x -> Static (String.implode x))
 
   let parse template_string =
     let the_parser =
       many1 (Par.choose p_meta p_static) <* eoi
 
     in
-    match parse the_parser (explode template_string) with
+    match parse the_parser (String.explode template_string) with
     | Ok (tpl, _) -> Ok tpl
     | Error _ as e -> e
 end
