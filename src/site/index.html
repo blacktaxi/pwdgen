@@ -122,19 +122,20 @@
         $(function () {
           var dict = null;
 
-          var generate = function () {
-            var tpl = $("#passwordtemplate").val();
-            if (dict === null) {
-              return {"error": "Error loading dictionary."};
-            } else {
-              return window.pwdGen.generate(tpl)(dict);
-            }
+          var generate = function (dict, tpl) {
+            // call into js_of_ocaml code
+            return window.pwdGen.generate(tpl)(dict);
           }
 
-          var generatePrime = function () {
+          var generateAndShow = function () {
             var res = null;
             try {
-              res = generate();
+              if (dict === null) {
+                res = {"error": "Error loading dictionary."};
+              } else {
+                var tpl = $("#passwordtemplate").val();
+                res = generate(dict, tpl);
+              }
             } catch (err) {
               res = {"error": err.message};
             }
@@ -185,23 +186,32 @@
                   $("#progressbar").hide();
                   $("#progressbarindeterminate").hide();
                   $("#generatebutton").button('reset');
+
                   dict = data;
-                  generatePrime();
+                  generateAndShow();
                 },
                 function (r, t, error) {
                   $("#progressbar").hide();
                   $("#progressbarindeterminate").hide();
                   $("#generatebutton").button('reset');
+
                   window.showflash("Error: " + error, true);
                 }
               );
             } else {
               $("#generatebutton").button('reset');
-              generatePrime();
+
+              generateAndShow();
             }
           });
 
           $("#password").keydown(function (e) {
+            if (e.which == 13) {
+              $("#generatebutton").click();
+            }
+          });
+
+          $("#passwordtemplate").keydown(function (e) {
             if (e.which == 13) {
               $("#generatebutton").click();
             }
