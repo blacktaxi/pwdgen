@@ -40,14 +40,15 @@ andThen p f = Parser <| \inp ->
 combine : Parser a -> Parser b -> Parser b
 combine q w = q `andThen` (always w)
 
--- (>>) : Parser a -> Parser b -> Parser b
--- (>>) = combine
-
 or : Parser a -> Parser a -> Parser a
 or q w = Parser <| \inp ->
     case runParser q inp of
         Ok _ as ok -> ok
         Err _ -> runParser w inp
+
+try : Parser a -> Parser a
+try p = Parser <| \inp ->
+
 
 apply : Parser (a -> b) -> Parser a -> Parser b
 apply a p = a `andThen` \f -> p `andThen` \a -> succeed (f a)
@@ -96,6 +97,9 @@ string s =
             then Ok (s, String.dropLeft (String.length s) inp)
             else Err ""
     in p `annotate` ("'" ++ s ++ "'")
+
+-- anyString : Parser String
+-- anyString = Parser <| \inp ->
 
 anyOf : String -> Parser Char
 anyOf s = satisfy (\x -> String.fromChar x `String.contains` s)
