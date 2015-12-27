@@ -1,0 +1,11 @@
+#!/bin/sh
+# Run this every time you need to update dependencies. This will maintain the
+# exact-dependencies.json file that is needed for docker build.
+#
+# We need this because elm-package install doesn't work in Docker, so we use
+# this hacky script to install packages which doesn't implement transitive
+# dependency resolution. So we feed it a list of already resolved exact
+# dependencies.
+
+elm-package install
+cp elm-stuff/exact-dependencies.json exact-dependencies.json

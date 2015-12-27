@@ -16,6 +16,17 @@ module String = struct
     explode s |> List.filter p |> implode
 end
 
+type pos = Noun | Adj | Verb | Adv
+
+type template_part =
+  | Static of string
+  | Number of int
+  | Word of pos
+
+type template = template_part list
+
+exception Invalid_template of string
+
 type generation_config =
   {
     nouns : string array;
@@ -24,17 +35,6 @@ type generation_config =
     adverbs : string array;
     random : int * int -> int;
   }
-
-type pos = Noun | Adj | Verb | Adv
-
-type token =
-  | Static of string
-  | Number of int
-  | Word of pos
-
-type template = token list
-
-exception Invalid_template of string
 
 let generate_random item ~(gen_cfg: generation_config) =
   let rng = gen_cfg.random in
@@ -66,8 +66,8 @@ let generate_random item ~(gen_cfg: generation_config) =
       |> String.filter (function | '-' | '_' -> false | _ -> true)
 
 let generate_from_template template gen_cfg =
-  let words = List.map (generate_random ~gen_cfg:gen_cfg) template in
-  String.concat "" words
+  let parts = List.map (generate_random ~gen_cfg:gen_cfg) template in
+  String.concat "" parts
 
 type ('a, 'b) result = Ok of 'a | Error of 'b
 
@@ -153,21 +153,21 @@ struct
     | other -> fail ("unrecognized meta: " ^ other)
 
   let p_number_meta =
-    many1 (sat ((==) '0'))
+    many1 (a_char '0')
     >>= fun numdef ->
     return (Number (List.length numdef))
 
-  let p_meta = a_char '{' *> choose p_word_meta p_number_meta <* a_char '}'
+  let p_meta =
+    a_char '{' *> choose p_word_meta p_number_meta <* a_char '}'
+    |> label "meta"
 
   let p_static =
     many1 (sat ((<>) '{'))
     |> fmap (fun x -> Static (String.implode x))
 
   let parse template_string =
-    let the_parser =
-      many1 (Par.choose p_meta p_static) <* eoi
+    let the_parser = many1 (choose p_meta p_static) <* eoi in
 
-    in
     match parse the_parser (String.explode template_string) with
     | Ok (tpl, _) -> Ok tpl
     | Error _ as e -> e
