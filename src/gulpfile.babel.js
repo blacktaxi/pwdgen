@@ -24,7 +24,7 @@ function exec_(command, callback) {
 }
 
 gulp.task('lint', () => {
-  return gulp.src(['**/*.js','!node_modules/**', '!elm/elm-stuff/**', `!${paths.build}/**`])
+  return gulp.src(['**/*.js','!node_modules/**', '!elm/elm-stuff/**', `!${paths.build}/**`, `!${paths.elmBuild}`])
     .pipe(eslint())
     .pipe(eslint.format())
     .pipe(eslint.failAfterError());
@@ -77,7 +77,7 @@ gulp.task('connect', () => {
 });
 
 gulp.task('build', (cb) => {
-  runSequence('clean', ['build:elm', 'build:static', 'build:styl'], cb);
+  runSequence('clean', ['lint', 'build:elm', 'build:static'], cb);
 });
 
 gulp.task('dev', (cb) => {
