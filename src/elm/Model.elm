@@ -20,4 +20,4 @@ type Action
   = PasswordTemplateInput String
   | DictionaryUpdated (Future Generator.Dictionary)
   | GenerationFinished (Result String String)
-  | GenerateButtonPressed
+  | GenerateButtonClicked
