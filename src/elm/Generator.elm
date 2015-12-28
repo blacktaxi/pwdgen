@@ -15,7 +15,12 @@ type TemplatePart
 
 type alias Template = List TemplatePart
 
-type alias Dictionary = Dict PartOfSpeech (Array String)
+type alias Dictionary =
+  { nouns : Array String
+  , adjectives : Array String
+  , verbs : Array String
+  , adverbs : Array String
+  }
 
 generate : Dictionary -> Template -> Task String String
 generate dictionary template =

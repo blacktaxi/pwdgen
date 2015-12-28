@@ -5,11 +5,15 @@ import Signal exposing (Signal, Address)
 import Task exposing (Task)
 import StartApp
 import Html exposing (Html)
+import Http
+import Json.Decode as J
 
 import Generator
 import TemplateParser
 import View
 import Model exposing (..)
+
+import Debug
 
 initModel : Model
 initModel =
@@ -24,12 +28,27 @@ initAction = (initModel, Effects.none)
 update : Action -> Model -> (Model, Effects Action)
 update action model =
   let
-    loadDictionary () = Task.fail "dummy!"
+    loadDictionary () =
+      let
+        decodeField name = (J.at [ name ] (J.array J.string))
+
+        decodeDict =
+          J.object4 Generator.Dictionary
+            (decodeField "nouns")
+            (decodeField "adjectives")
+            (decodeField "verbs")
+            (decodeField "adverbs")
+
+      in
+        Http.get decodeDict "/dict1.json"
+        |> Task.mapError toString
 
     generate dictionary =
       model.passwordTemplateInput
       |> Maybe.map Ok |> Maybe.withDefault (Err "Password template is empty")
-      |> (flip Result.andThen) TemplateParser.parse
+      |> (flip Result.andThen)
+        (TemplateParser.parse
+          >> Result.formatError ((++) "Could not parse password template: "))
       |> Task.fromResult
       |> (flip Task.andThen) (\template ->
         Generator.generate dictionary template)
@@ -40,8 +59,8 @@ update action model =
         ({ model | passwordTemplateInput = Just newPasswordTemplate }, Effects.none)
 
       GenerateButtonClicked ->
-        case model.generatorOutput of
-          NotStarted ->
+        let
+          work () =
             case model.generatorDictionary of
               Just dictionary ->
                 ( { model | generatorOutput = Generating }
@@ -62,14 +81,24 @@ update action model =
                   |> Effects.task
                 )
 
-          _ -> (model, Effects.none)
+        in
+          case model.generatorOutput of
+            NotStarted -> work ()
+            Finished _ -> work ()
+
+            _ -> (model, Effects.none)
 
       DictionaryLoadingFinished result ->
-        { model | generatorDictionary = Just result }
+        { model |
+            generatorDictionary = Just result
+          , generatorOutput = NotStarted
+        }
         |> update GenerateButtonClicked
 
       GenerationFinished result ->
         ({ model | generatorOutput = Finished result }, Effects.none)
+
+    -- `always` Debug.log "oops" (model, action)
 
 app : StartApp.App Model
 app =
