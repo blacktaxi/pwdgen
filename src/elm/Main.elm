@@ -1,28 +1,14 @@
 module Pwdgen where
 
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (..)
 import Effects exposing (Effects)
 import Signal exposing (Signal, Address)
-import Task
+import Task exposing (Task)
 import StartApp
+import Html exposing (Html)
 
 import Generator
-
-type ProgressStatus
-  = NotStarted
-  | InProgress (Maybe Int)
-
-type Future a
-  = NotReady ProgressStatus
-  | Ready (Result String a)
-
-type alias Model =
-  { passwordTemplateInput : Maybe String
-  , generatorDictionary : Future Generator.Dictionary
-  , generatorOutput : Future String
-  }
+import View
+import Model exposing (..)
 
 initModel : Model
 initModel =
@@ -31,14 +17,8 @@ initModel =
   , generatorOutput = NotReady NotStarted
   }
 
-init : (Model, Effects Action)
-init = (initModel, Effects.none)
-
-type Action
-  = PasswordTemplateInput String
-  | DictionaryUpdated (Future Generator.Dictionary)
-  | GenerationFinished (Result String String)
-  | GenerateButtonPressed
+initAction : (Model, Effects Action)
+initAction = (initModel, Effects.none)
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
@@ -59,16 +39,12 @@ update action model =
         |> Task.map (GenerationFinished)
         |> Effects.task)
 
-view : Address Action -> Model -> Html
-view address model =
-  text "Hello."
-
 app : StartApp.App Model
 app =
   StartApp.start
-    { init = init
+    { init = initAction
     , update = update
-    , view = view
+    , view = View.view
     , inputs = []
     }
 
