@@ -9,10 +9,10 @@ import connect from 'gulp-connect';
 import child_process from 'child_process';
 
 const paths = {
-  build: 'dist',
-  elmSrc: 'elm',
-  elmBuild: 'elm/dist/elm.js',
-  staticSrc: 'static'
+  build: './../dist',
+  elmSrc: './elm',
+  elmBuild: './elm/dist/elm.js',
+  staticSrc: './static'
 };
 
 function exec_(command, callback) {
@@ -24,14 +24,21 @@ function exec_(command, callback) {
 }
 
 gulp.task('lint', () => {
-  return gulp.src(['**/*.js','!node_modules/**', '!elm/elm-stuff/**', `!${paths.build}/**`, `!${paths.elmBuild}`])
-    .pipe(eslint())
-    .pipe(eslint.format())
-    .pipe(eslint.failAfterError());
+  return
+    gulp.src([
+      '**/*.js',
+      '!node_modules/**',
+      `!${paths.elmSrc}/elm-stuff/**`,
+      `!${paths.build}/**`,
+      `!${paths.elmBuild}`])
+
+      .pipe(eslint())
+      .pipe(eslint.format())
+      .pipe(eslint.failAfterError());
 });
 
 gulp.task('clean', (cb) => {
-  rimraf(`./${paths.build}`, cb);
+  rimraf(`${paths.build}`, cb);
 });
 
 gulp.task('build:elm-package-install', (cb) => {
