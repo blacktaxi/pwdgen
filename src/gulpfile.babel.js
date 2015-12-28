@@ -2,8 +2,8 @@
 
 import gulp from 'gulp';
 import eslint from 'gulp-eslint';
-import rimraf from 'gulp-rimraf';
-import watch from 'gulp-watch';
+import 'gulp-watch';
+import rimraf from 'rimraf';
 import runSequence from 'run-sequence';
 import connect from 'gulp-connect';
 import child_process from 'child_process';
@@ -30,9 +30,8 @@ gulp.task('lint', () => {
     .pipe(eslint.failAfterError());
 });
 
-gulp.task('clean', () => {
-  return gulp.src(`${paths.build}/**/*`, { read: false })
-    .pipe(rimraf({ force: true }));
+gulp.task('clean', (cb) => {
+  rimraf(`./${paths.build}`, cb);
 });
 
 gulp.task('build:elm-package-install', (cb) => {
@@ -64,8 +63,8 @@ gulp.task('build:static', () => {
 });
 
 gulp.task('watch', () => {
-  watch(`${paths.staticSrc}/**/*`, ['build:static']);
-  watch(`${paths.elmSrc}/**/*`, ['build:elm-build']);
+  gulp.watch(`${paths.staticSrc}/**/*`, ['build:static']);
+  gulp.watch(`${paths.elmSrc}/**/*`, ['build:elm-build']);
 });
 
 gulp.task('connect', () => {
@@ -80,8 +79,6 @@ gulp.task('build', (cb) => {
   runSequence('clean', ['lint', 'build:elm', 'build:static'], cb);
 });
 
-gulp.task('dev', (cb) => {
-  runSequence('lint', ['connect', 'watch'], cb);
-});
+gulp.task('dev', ['connect', 'watch']);
 
 gulp.task('default', ['dev']);
