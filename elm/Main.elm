@@ -38,7 +38,7 @@ update action model =
             (decodeField "adverbs")
 
       in
-        Http.get decodeDict "/dictionary.json"
+        Http.get decodeDict "dictionary.json"
         |> Task.mapError toString
 
     generate dictionary =
