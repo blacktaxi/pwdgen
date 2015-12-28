@@ -15,7 +15,7 @@ import Model exposing (..)
 
 initModel : Model
 initModel =
-  { passwordTemplateInput = Nothing
+  { passwordTemplateInput = Just "{adj}{noun}\\d\\d"
   , generatorDictionary = Nothing
   , generatorOutput = NotStarted
   }
