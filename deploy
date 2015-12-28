@@ -1,8 +1,9 @@
 #!/bin/bash
 git checkout gh-pages
-git add dist
-git add -u dist
-git mv dist e
+rm -r e
+mv dist e
+git add e
+git add -u e
 git commit -m "Deploying."
 git push origin gh-pages
 git checkout elm
