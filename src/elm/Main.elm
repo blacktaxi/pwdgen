@@ -13,8 +13,6 @@ import TemplateParser
 import View
 import Model exposing (..)
 
-import Debug
-
 initModel : Model
 initModel =
   { passwordTemplateInput = Nothing
@@ -40,7 +38,7 @@ update action model =
             (decodeField "adverbs")
 
       in
-        Http.get decodeDict "/dict1.json"
+        Http.get decodeDict "/dictionary.json"
         |> Task.mapError toString
 
     generate dictionary =
@@ -97,8 +95,6 @@ update action model =
 
       GenerationFinished result ->
         ({ model | generatorOutput = Finished result }, Effects.none)
-
-    -- `always` Debug.log "oops" (model, action)
 
 app : StartApp.App Model
 app =
