@@ -11429,7 +11429,7 @@ Elm.Pwdgen.make = function (_elm) {
             decodeField("adjectives"),
             decodeField("verbs"),
             decodeField("adverbs"));
-            return A2($Task.mapError,$Basics.toString,A2($Http.get,decodeDict,"/dictionary.json"));
+            return A2($Task.mapError,$Basics.toString,A2($Http.get,decodeDict,"dictionary.json"));
          };
          var _p3 = action;
          switch (_p3.ctor)
