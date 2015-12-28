@@ -1,6 +1,6 @@
-pwdgen
+pwdgen [![Build Status](https://travis-ci.org/blacktaxi/pwdgen.svg)](https://travis-ci.org/blacktaxi/pwdgen)
 ======
 
-A [js_of_ocaml](https://github.com/ocsigen/js_of_ocaml) "hello world" web app: generate a password from a template.
+An [Elm](http://elm-lang.org/) "hello world" web app: generate a password from a template.
 
-For example, `{adj}{noun}{00}` is turned into something like `uncriticalovercapitalisation21`.
+For example, `{adj}{noun}\d\d` is turned into something like `uncriticalovercapitalisation21`.
