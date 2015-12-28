@@ -2,6 +2,7 @@
 git checkout gh-pages
 git add dist
 git add -u dist
+git mv dist e
 git commit -m "Deploying."
 git push origin gh-pages
 git checkout elm
