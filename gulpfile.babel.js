@@ -9,7 +9,7 @@ import connect from 'gulp-connect';
 import child_process from 'child_process';
 
 const paths = {
-  build: './../dist',
+  build: './dist',
   elmSrc: './elm',
   elmBuild: './elm/dist/elm.js',
   staticSrc: './static'
@@ -88,4 +88,4 @@ gulp.task('build', (cb) => {
 
 gulp.task('dev', ['connect', 'watch']);
 
-gulp.task('default', ['dev']);
+gulp.task('default', ['build']);
