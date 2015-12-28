@@ -20,10 +20,11 @@ view addr model =
         []
         [ text <|
             case model.generatorOutput of
-              NotReady NotStarted -> "click the button to start generating..."
-              NotReady (InProgress _) -> "generating..."
-              Ready (Ok x) -> x
-              Ready (Err err) -> "Error: " ++ err
+              NotStarted -> "click the button to start generating..."
+              LoadingDictionary progress -> "Loading dictionary, " ++ (toString progress) ++ "% complete..."
+              Generating -> "generating..."
+              Finished (Ok x) -> x
+              Finished (Err err) -> "Error: " ++ err
         ]
     , input
         [ placeholder "password template goes here"

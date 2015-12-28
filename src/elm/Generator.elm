@@ -4,6 +4,8 @@ import Task exposing (Task)
 import Dict exposing (Dict)
 import Array exposing (Array)
 
+import SecureRandom
+
 type PartOfSpeech = Noun | Adjective | Verb | Adverb
 
 type TemplatePart
@@ -16,5 +18,7 @@ type alias Template = List TemplatePart
 type alias Dictionary = Dict PartOfSpeech (Array String)
 
 generate : Dictionary -> Template -> Task String String
-generate _ _ =
-  Task.fail "error"
+generate dictionary template =
+  (SecureRandom.int 0 10 |> Task.mapError toString)
+  `Task.andThen` \x ->
+    Task.succeed <| "hohooo: " ++ (toString x)

@@ -2,22 +2,20 @@ module Model where
 
 import Generator
 
-type ProgressStatus
+type GenerationStatus
   = NotStarted
-  | InProgress (Maybe Int)
-
-type Future a
-  = NotReady ProgressStatus
-  | Ready (Result String a)
+  | LoadingDictionary Int
+  | Generating
+  | Finished (Result String String)
 
 type alias Model =
   { passwordTemplateInput : Maybe String
-  , generatorDictionary : Future Generator.Dictionary
-  , generatorOutput : Future String
+  , generatorDictionary : Maybe Generator.Dictionary
+  , generatorOutput : GenerationStatus
   }
 
 type Action
   = PasswordTemplateInput String
-  | DictionaryUpdated (Future Generator.Dictionary)
-  | GenerationFinished (Result String String)
   | GenerateButtonClicked
+  | DictionaryLoadingFinished Generator.Dictionary
+  | GenerationFinished (Result String String)

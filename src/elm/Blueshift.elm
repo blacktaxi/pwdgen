@@ -51,7 +51,7 @@ andThen p f = Parser <| \inp ->
         Err err -> Err err
 
 (>>=) : (a -> Parser b) -> Parser a -> Parser b
-(>>=) = andThen
+(>>=) = flip andThen
 
 followedBy : Parser a -> Parser b -> Parser b
 followedBy p q = p `andThen` \_ -> q

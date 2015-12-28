@@ -7,14 +7,15 @@ import StartApp
 import Html exposing (Html)
 
 import Generator
+import TemplateParser
 import View
 import Model exposing (..)
 
 initModel : Model
 initModel =
   { passwordTemplateInput = Nothing
-  , generatorDictionary = NotReady NotStarted
-  , generatorOutput = NotReady NotStarted
+  , generatorDictionary = Nothing
+  , generatorOutput = NotStarted
   }
 
 initAction : (Model, Effects Action)
@@ -22,22 +23,53 @@ initAction = (initModel, Effects.none)
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
-  case action of
-    PasswordTemplateInput newPasswordTemplate ->
-      ({ model | passwordTemplateInput = Just newPasswordTemplate }, Effects.none)
+  let
+    loadDictionary () = Task.fail "dummy!"
 
-    DictionaryUpdated newState ->
-      ({ model | generatorDictionary = newState }, Effects.none)
+    generate dictionary =
+      model.passwordTemplateInput
+      |> Maybe.map Ok |> Maybe.withDefault (Err "Password template is empty")
+      |> (flip Result.andThen) TemplateParser.parse
+      |> Task.fromResult
+      |> (flip Task.andThen) (\template ->
+        Generator.generate dictionary template)
 
-    GenerationFinished result ->
-      ({ model | generatorOutput = Ready result }, Effects.none)
+  in
+    case action of
+      PasswordTemplateInput newPasswordTemplate ->
+        ({ model | passwordTemplateInput = Just newPasswordTemplate }, Effects.none)
 
-    GenerateButtonPressed ->
-      ( { model | generatorOutput = NotReady (InProgress Nothing) }
-      , Task.fail "dummy"
-        |> Task.toResult
-        |> Task.map (GenerationFinished)
-        |> Effects.task)
+      GenerateButtonClicked ->
+        case model.generatorOutput of
+          NotStarted ->
+            case model.generatorDictionary of
+              Just dictionary ->
+                ( { model | generatorOutput = Generating }
+                , generate dictionary
+                  |> Task.toResult
+                  |> Task.map GenerationFinished
+                  |> Effects.task
+                )
+
+              Nothing ->
+                ( { model | generatorOutput = LoadingDictionary 0 }
+                , loadDictionary ()
+                  |> Task.toResult
+                  |> Task.map (\result ->
+                    case result of
+                      Ok d -> DictionaryLoadingFinished d
+                      Err err -> GenerationFinished (Err err))
+                  |> Effects.task
+                )
+
+          _ -> (model, Effects.none)
+
+      DictionaryLoadingFinished result ->
+        { model | generatorDictionary = Just result }
+        |> update GenerateButtonClicked
+
+      GenerationFinished result ->
+        ({ model | generatorOutput = Finished result }, Effects.none)
 
 app : StartApp.App Model
 app =
