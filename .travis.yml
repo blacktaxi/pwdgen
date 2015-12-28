@@ -1,0 +1,10 @@
+language: node_js
+node_js:
+  - "4.1"
+sudo: false
+cache:
+  directories:
+  - node_modules
+before_script:
+  - npm install -g gulp
+script: gulp
