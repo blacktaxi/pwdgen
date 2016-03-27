@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Watching...
+fswatch src/*.ml static/ | xargs -n1 ./build.sh
